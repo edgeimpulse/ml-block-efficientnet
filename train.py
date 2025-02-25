@@ -8,7 +8,7 @@ from tensorflow.keras.optimizers import Adam
 from tensorflow.keras import Model
 from conversion import convert_to_tf_lite, save_saved_model
 from shared.parse_train_input import parse_train_input, parse_input_shape
-from shared.training import get_callbacks
+import shared.training
 
 # Lower TensorFlow log levels
 tf.get_logger().setLevel(logging.ERROR)
@@ -82,7 +82,7 @@ if early_stopping:
 if args.info_file:
     input = parse_train_input(args.info_file) if args.info_file else None
 
-    callbacks = get_callbacks(dir_path,
+    callbacks = shared.training.get_callbacks(dir_path,
         is_enterprise_project=input.isEnterpriseProject,
         max_training_time_s=input.maxTrainingTimeSeconds,
         max_gpu_time_s=input.remainingGpuComputeTimeSeconds,
