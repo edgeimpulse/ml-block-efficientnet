@@ -2,12 +2,12 @@
     "version": 1,
     "type": "machine-learning",
     "info": {
-        "name": "Custom EfficientNet",
-        "description": "This repository is an example on how to bring EfficientNet (built using Keras) into Edge Impulse.",
+        "name": "EfficientNet",
+        "description": "A collection of high-end image classification models, with transfer learning weights, scaling from 4 to 28M parameters. Great for complex usecases on Linux.",
         "operatesOn": "image",
         "imageInputScaling": "0..255",
         "indRequiresGpu": false,
-        "repositoryUrl": "https://github.com/edgeimpulse/example-custom-ml-block-keras"
+        "repositoryUrl": "https://github.com/edgeimpulse/example-custom-ml-block-efficientnet"
     },
     "parameters": [
         {
@@ -57,11 +57,81 @@
             "param": "model-size"
         },
         {
-            "name": "Use pretrained weights?",
+            "name": "Use pretrained weights",
             "value": true,
             "type": "flag",
-            "help": "If enabled, transfer learns on existing MobileNet trained weights. For most usecases you want to keep this enabled.",
+            "help": "If enabled, transfer learns on existing ImageNet trained weights. For most usecases you want to keep this enabled.",
             "param": "use-pretrained-weights"
+        },
+        {
+            "name": "Freeze % of layers",
+            "value": 90,
+            "type": "int",
+            "help": "The percentage of layers in the transfer learning base model to freeze. These layers will not be retrained.",
+            "param": "freeze-percentage-of-layers",
+            "showIf": {
+                "parameter": "use-pretrained-weights",
+                "operator": "eq",
+                "value": "true"
+            }
+        },
+        {
+            "name": "Neurons in last dense layer",
+            "value": 32,
+            "type": "int",
+            "help": "One dense layer is added after the EfficientNet base model, these are the number of neurons in this layer. Set to 0 to disable.",
+            "param": "last-layer-neurons",
+            "section": "advanced"
+        },
+        {
+            "name": "Dropout in last dense layer",
+            "value": 0.1,
+            "type": "float",
+            "help": "One dense layer is added after the EfficientNet base model, this is the dropout after this layer. Set to 0 to disable.",
+            "param": "last-layer-dropout",
+            "section": "advanced"
+        },
+        {
+            "name": "Batch size",
+            "value": 16,
+            "type": "int",
+            "help": "The batch size to use during training. Consider reducing this for larger models.",
+            "param": "batch-size",
+            "section": "advanced"
+        },
+        {
+            "name": "Enable early stopping",
+            "type": "flag",
+            "value": true,
+            "help": "If enabled, stops training when there's no improvement in the loss.",
+            "param": "early-stopping",
+            "section": "advanced"
+        },
+        {
+            "name": "Early stopping patience",
+            "value": 5,
+            "type": "int",
+            "help": "Number of epochs with no improvement after which training will be stopped.",
+            "param": "early-stopping-patience",
+            "section": "advanced",
+            "showIf": {
+                "parameter": "early-stopping",
+                "operator": "eq",
+                "value": "true"
+            }
+        },
+        {
+            "name": "Early stopping min. delta",
+            "value": 0.001,
+            "type": "float",
+            "help": "Minimum change in the monitored quantity to qualify as an improvement, i.e. an absolute change of less than min_delta, will count as no improvement.",
+            "param": "early-stopping-min-delta",
+            "section": "advanced",
+            "showIf": {
+                "parameter": "early-stopping",
+                "operator": "eq",
+                "value": "true"
+            }
         }
     ]
 }

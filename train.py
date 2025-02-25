@@ -1,5 +1,5 @@
 import sklearn # do this first, otherwise get a libgomp error?!
-import argparse, os, sys, random, logging
+import argparse, os, sys, random, logging, math
 import numpy as np
 import tensorflow as tf
 from tensorflow.keras.models import Sequential
@@ -27,6 +27,14 @@ parser.add_argument('--epochs', type=int, required=True)
 parser.add_argument('--learning-rate', type=float, required=True)
 parser.add_argument('--model-size', type=str, required=False, default='b0')
 parser.add_argument('--use-pretrained-weights', action='store_true')
+parser.add_argument('--freeze-percentage-of-layers', type=int, required=False, default=90,
+    help='% of layers that are frozen when transfer learning, only applies when --use-pretrained-weights is passed in')
+parser.add_argument('--batch-size', type=int, required=False, default=16)
+parser.add_argument('--last-layer-neurons', type=int, required=False, default=16)
+parser.add_argument('--last-layer-dropout', type=float, required=False, default=0.1)
+parser.add_argument('--early-stopping', action='store_true')
+parser.add_argument('--early-stopping-patience', type=int, required=False, default=5)
+parser.add_argument('--early-stopping-min-delta', type=float, required=False, default=0.001)
 parser.add_argument('--out-directory', type=str, required=True)
 
 args, unknown = parser.parse_known_args()
@@ -35,7 +43,12 @@ if not os.path.exists(args.out_directory):
     os.mkdir(args.out_directory)
 
 model_size = args.model_size
-use_pretrained_weigths = args.use_pretrained_weigths
+use_pretrained_weights = args.use_pretrained_weights
+freeze_percentage_of_layers = args.freeze_percentage_of_layers
+batch_size = args.batch_size
+last_layer_neurons = args.last_layer_neurons
+last_layer_dropout = args.last_layer_dropout
+early_stopping = args.early_stopping
 
 # grab train/test set and convert into TF Dataset
 X_train = np.load(os.path.join(args.data_directory, 'X_split_train.npy'), mmap_mode='r')
@@ -60,55 +73,66 @@ dir_path = os.path.dirname(os.path.realpath(__file__))
 # place to put callbacks (e.g. to MLFlow or Weights & Biases)
 callbacks = []
 
+if early_stopping:
+    callbacks.append(tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=args.early_stopping_patience, min_delta=args.early_stopping_min_delta))
+
 # model architecture
 if model_size == 'b0':
-    if use_pretrained_weigths:
+    if use_pretrained_weights:
         weights_path = os.path.join(WEIGHTS_PREFIX, 'efficientnetb0_notop.h5')
         base_model = tf.keras.applications.EfficientNetB0(include_top=False, pooling='avg', weights=weights_path, classes=classes)
     else:
-        base_model = tf.keras.applications.EfficientNetB0(include_top=False, pooling='avg', classes=classes)
+        base_model = tf.keras.applications.EfficientNetB0(include_top=False, pooling='avg', weights=None, classes=classes)
 elif model_size == 'b1':
-    if use_pretrained_weigths:
+    if use_pretrained_weights:
         weights_path = os.path.join(WEIGHTS_PREFIX, 'efficientnetb1_notop.h5')
         base_model = tf.keras.applications.EfficientNetB1(include_top=False, pooling='avg', weights=weights_path, classes=classes)
     else:
-        base_model = tf.keras.applications.EfficientNetB1(include_top=False, pooling='avg', classes=classes)
+        base_model = tf.keras.applications.EfficientNetB1(include_top=False, pooling='avg', weights=None, classes=classes)
 elif model_size == 'b2':
-    if use_pretrained_weigths:
+    if use_pretrained_weights:
         weights_path = os.path.join(WEIGHTS_PREFIX, 'efficientnetb2_notop.h5')
         base_model = tf.keras.applications.EfficientNetB2(include_top=False, pooling='avg', weights=weights_path, classes=classes)
     else:
-        base_model = tf.keras.applications.EfficientNetB2(include_top=False, pooling='avg', classes=classes)
+        base_model = tf.keras.applications.EfficientNetB2(include_top=False, pooling='avg', weights=None, classes=classes)
 elif model_size == 'b3':
-    if use_pretrained_weigths:
+    if use_pretrained_weights:
         weights_path = os.path.join(WEIGHTS_PREFIX, 'efficientnetb3_notop.h5')
         base_model = tf.keras.applications.EfficientNetB3(include_top=False, pooling='avg', weights=weights_path, classes=classes)
     else:
-        base_model = tf.keras.applications.EfficientNetB3(include_top=False, pooling='avg', classes=classes)
+        base_model = tf.keras.applications.EfficientNetB3(include_top=False, pooling='avg', weights=None, classes=classes)
 elif model_size == 'b4':
-    if use_pretrained_weigths:
+    if use_pretrained_weights:
         weights_path = os.path.join(WEIGHTS_PREFIX, 'efficientnetb4_notop.h5')
         base_model = tf.keras.applications.EfficientNetB4(include_top=False, pooling='avg', weights=weights_path, classes=classes)
     else:
-        base_model = tf.keras.applications.EfficientNetB4(include_top=False, pooling='avg', classes=classes)
+        base_model = tf.keras.applications.EfficientNetB4(include_top=False, pooling='avg', weights=None, classes=classes)
 elif model_size == 'b5':
-    if use_pretrained_weigths:
+    if use_pretrained_weights:
         weights_path = os.path.join(WEIGHTS_PREFIX, 'efficientnetb5_notop.h5')
         base_model = tf.keras.applications.EfficientNetB5(include_top=False, pooling='avg', weights=weights_path, classes=classes)
     else:
-        base_model = tf.keras.applications.EfficientNetB5(include_top=False, pooling='avg', classes=classes)
+        base_model = tf.keras.applications.EfficientNetB5(include_top=False, pooling='avg', weights=None, classes=classes)
 else:
     print(f'Expected --model-size to be b0, b1, b2, b3, b4 or b5 (was {model_size})')
     exit(1)
 
-if use_pretrained_weigths:
-    base_model.trainable = False
+if use_pretrained_weights:
+    # What percentage of the base model's layers we will fine tune
+    fine_tune_from = math.ceil(len(base_model.layers) * (freeze_percentage_of_layers / 100))
+
+    base_model.trainable = True
+    # Freeze all the layers before the 'fine_tune_from' layer
+    for layer in base_model.layers[0:fine_tune_from]:
+        layer.trainable = False
 
 model = Sequential()
 model.add(InputLayer(input_shape=MODEL_INPUT_SHAPE, name='x_input'))
 model.add(Model(inputs=base_model.inputs, outputs=base_model.outputs))
-model.add(Dense(16, activation='relu'))
-model.add(Dropout(0.1))
+if last_layer_neurons > 0:
+    model.add(Dense(last_layer_neurons, activation='relu'))
+if last_layer_dropout > 0:
+    model.add(Dropout(last_layer_dropout))
 model.add(Flatten())
 model.add(Dense(classes, activation='softmax'))
 
@@ -116,9 +140,8 @@ model.add(Dense(classes, activation='softmax'))
 opt = Adam(learning_rate=args.learning_rate, beta_1=0.9, beta_2=0.999)
 
 # this controls the batch size, or you can manipulate the tf.data.Dataset objects yourself
-BATCH_SIZE = 32
-train_dataset_batch = train_dataset.batch(BATCH_SIZE, drop_remainder=False)
-validation_dataset_batch = validation_dataset.batch(BATCH_SIZE, drop_remainder=False)
+train_dataset_batch = train_dataset.batch(batch_size, drop_remainder=False)
+validation_dataset_batch = validation_dataset.batch(batch_size, drop_remainder=False)
 
 # train the neural network
 model.compile(loss='categorical_crossentropy', optimizer=opt, metrics=['accuracy'])

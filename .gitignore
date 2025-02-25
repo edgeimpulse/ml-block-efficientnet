@@ -6,3 +6,4 @@ ei-block-data/
 out/
 .DS_Store
 transfer-learning-weights/*.h5
+.venv/

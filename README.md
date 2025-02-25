@@ -36,7 +36,13 @@ You run this pipeline via Docker. This encapsulates all dependencies and package
 9. Run the container to test the script (you don't need to rebuild the container if you make changes):
 
     ```
-    $ docker run --rm -v $PWD:/app efficientnet --data-directory /app/data --epochs 20 --learning-rate 0.001 --out-directory out/
+    $ docker run --rm -v $PWD:/app efficientnet \
+        --data-directory /app/data \
+        --epochs 20 \
+        --learning-rate 0.001 \
+        --model-size b0 \
+        --use-pretrained-weights \
+        --out-directory out/
     ```
 
 10. This creates two .tflite files and a saved model ZIP file in the 'out' directory.

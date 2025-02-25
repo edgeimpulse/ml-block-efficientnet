@@ -1,3 +1,4 @@
 data/
 out/
 transfer-learning-weights/
+.venv/
