@@ -7,6 +7,8 @@ from tensorflow.keras.layers import Dense, InputLayer, Dropout, Flatten, Reshape
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras import Model
 from conversion import convert_to_tf_lite, save_saved_model
+from shared.parse_train_input import parse_train_input, parse_input_shape
+from shared.training import get_callbacks
 
 # Lower TensorFlow log levels
 tf.get_logger().setLevel(logging.ERROR)
@@ -18,10 +20,14 @@ random.seed(RANDOM_SEED)
 np.random.seed(RANDOM_SEED)
 tf.random.set_seed(RANDOM_SEED)
 
+dir_path = os.path.dirname(os.path.realpath(__file__))
+
 WEIGHTS_PREFIX = os.environ.get('WEIGHTS_PREFIX', '/weights')
 
 # Load files
 parser = argparse.ArgumentParser(description='EfficientNet B0 model in Edge Impulse')
+parser.add_argument('--info-file', type=str, required=False,
+                    help='train_input.json file with info about classes and input shape')
 parser.add_argument('--data-directory', type=str, required=True)
 parser.add_argument('--epochs', type=int, required=True)
 parser.add_argument('--learning-rate', type=float, required=True)
@@ -67,14 +73,20 @@ validation_dataset = tf.data.Dataset.from_tensor_slices((X_test, Y_test))
 print('Training on:', 'gpu' if len(tf.config.list_physical_devices('GPU')) > 0 else 'cpu')
 print('')
 
-# Weights file
-dir_path = os.path.dirname(os.path.realpath(__file__))
-
 # place to put callbacks (e.g. to MLFlow or Weights & Biases)
 callbacks = []
 
 if early_stopping:
     callbacks.append(tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=args.early_stopping_patience, min_delta=args.early_stopping_min_delta))
+
+if args.info_file:
+    input = parse_train_input(args.info_file) if args.info_file else None
+
+    callbacks = get_callbacks(dir_path,
+        is_enterprise_project=input.isEnterpriseProject,
+        max_training_time_s=input.maxTrainingTimeSeconds,
+        max_gpu_time_s=input.remainingGpuComputeTimeSeconds,
+        enable_tensorboard=input.tensorboardLogging)
 
 # model architecture
 if model_size == 'b0':
