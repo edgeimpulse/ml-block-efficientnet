@@ -1,0 +1,67 @@
+{
+    "version": 1,
+    "type": "machine-learning",
+    "info": {
+        "name": "Custom EfficientNet",
+        "description": "This repository is an example on how to bring EfficientNet (built using Keras) into Edge Impulse.",
+        "operatesOn": "image",
+        "imageInputScaling": "0..255",
+        "indRequiresGpu": false,
+        "repositoryUrl": "https://github.com/edgeimpulse/example-custom-ml-block-keras"
+    },
+    "parameters": [
+        {
+            "name": "Number of training cycles",
+            "value": "30",
+            "type": "int",
+            "help": "Number of epochs to train the neural network on.",
+            "param": "epochs"
+        },
+        {
+            "name": "Learning rate",
+            "value": "0.001",
+            "type": "float",
+            "help": "How fast the neural network learns, if the network overfits quickly, then lower the learning rate.",
+            "param": "learning-rate"
+        },
+        {
+            "name": "Model size",
+            "value": "b0",
+            "type": "select",
+            "valid": [
+                {
+                    "label": "B0 - 4M params, 16 MB",
+                    "value": "b0"
+                },
+                {
+                    "label": "B1 - 6.5M params, 26 MB",
+                    "value": "b1"
+                },
+                {
+                    "label": "B2 - 7.7M params, 30.8 MB",
+                    "value": "b2"
+                },
+                {
+                    "label": "B3 - 10.7M params, 42.8 MB",
+                    "value": "b3"
+                },
+                {
+                    "label": "B4 - 17.5M params, 70 MB",
+                    "value": "b4"
+                },
+                {
+                    "label": "B5 - 28.3M params, 113.2 MB",
+                    "value": "b5"
+                }
+            ],
+            "param": "model-size"
+        },
+        {
+            "name": "Use pretrained weights?",
+            "value": true,
+            "type": "flag",
+            "help": "If enabled, transfer learns on existing MobileNet trained weights. For most usecases you want to keep this enabled.",
+            "param": "use-pretrained-weights"
+        }
+    ]
+}
