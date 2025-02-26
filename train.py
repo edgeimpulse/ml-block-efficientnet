@@ -236,8 +236,8 @@ model.add(Dense(classes, activation='softmax'))
 opt = Adam(learning_rate=args.learning_rate, beta_1=0.9, beta_2=0.999)
 
 # this controls the batch size, or you can manipulate the tf.data.Dataset objects yourself
-train_dataset_batch = train_dataset.batch(batch_size, drop_remainder=False)
-validation_dataset_batch = validation_dataset.batch(batch_size, drop_remainder=False)
+train_dataset_batch = train_dataset.batch(batch_size, drop_remainder=False).prefetch(tf.data.AUTOTUNE)
+validation_dataset_batch = validation_dataset.batch(batch_size, drop_remainder=False).prefetch(tf.data.AUTOTUNE)
 
 # train the neural network
 model.compile(loss='categorical_crossentropy', optimizer=opt, metrics=['accuracy'])
