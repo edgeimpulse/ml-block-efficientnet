@@ -1,5 +1,5 @@
 import sklearn # do this first, otherwise get a libgomp error?!
-import argparse, os, sys, random, logging, math
+import argparse, os, sys, random, logging, math, tempfile
 import numpy as np
 import tensorflow as tf
 from tensorflow.keras.models import Sequential
@@ -88,8 +88,23 @@ print('')
 # place to put callbacks (e.g. to MLFlow or Weights & Biases)
 callbacks = []
 
+# send out a progress update every interval_s seconds.
 callbacks.append(shared.training.BatchLoggerCallback(
     batch_size=batch_size, train_sample_count=len(X_train), epochs=args.epochs, ensure_determinism=False))
+
+# Saves the best model, based on validation loss (hopefully more meaningful than just accuracy)
+best_model_temp_dir = tempfile.TemporaryDirectory()
+BEST_MODEL_PATH = os.path.join(best_model_temp_dir.name, 'best_model.hdf5')
+callbacks.append(tf.keras.callbacks.ModelCheckpoint(
+    BEST_MODEL_PATH,
+    monitor='val_loss',
+    save_best_only=True,
+    mode='auto',
+    # It's important to save and load the whole model and not just the weights because,
+    # if we do any fine tuning during transfer learning, the fine tuned model has a
+    # slightly different data structure.
+    save_weights_only=False,
+    verbose=0))
 
 if early_stopping:
     callbacks.append(tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=args.early_stopping_patience, min_delta=args.early_stopping_min_delta))
@@ -97,7 +112,8 @@ if early_stopping:
 if args.info_file:
     input = parse_train_input(args.info_file) if args.info_file else None
 
-    callbacks = shared.training.get_callbacks(dir_path,
+    callbacks = callbacks + shared.training.get_callbacks(
+        dir_path=dir_path,
         is_enterprise_project=input.isEnterpriseProject,
         max_training_time_s=input.maxTrainingTimeSeconds,
         max_gpu_time_s=input.remainingGpuComputeTimeSeconds,
@@ -231,6 +247,11 @@ print('')
 print('Training network OK')
 print('')
 
+print('Loading model with lowest validation loss...')
+model = shared.training.load_best_model(BEST_MODEL_PATH)
+print('Loading model with lowest validation loss OK')
+print('')
+
 # Use this flag to disable per-channel quantization for a model.
 # This can reduce RAM usage for convolutional models, but may have
 # an impact on accuracy.
@@ -242,3 +263,5 @@ save_saved_model(model, args.out_directory)
 # Create tflite files (f32 / i8)
 convert_to_tf_lite(model, args.out_directory, validation_dataset, MODEL_INPUT_SHAPE,
     'model.tflite', 'model_quantized_int8_io.tflite', disable_per_channel_quantization)
+
+best_model_temp_dir.cleanup()

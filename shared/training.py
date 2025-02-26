@@ -76,6 +76,13 @@ def check_gpu_time_exceeded(max_gpu_time_s, total_time):
     # End the job
     exit(1)
 
+# Loads the best model from disk
+def load_best_model(best_model_path, akida_model=False):
+    # Includes workaround for https://github.com/edgeimpulse/edgeimpulse/issues/1419
+    model = tf.keras.models.load_model(best_model_path, compile=False)
+    model.compile()
+    return model
+
 class HandleTrainingDeadline(Callback):
     """ Check when we run out of training time. """
 
