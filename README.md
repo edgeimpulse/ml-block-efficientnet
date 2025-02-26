@@ -1,14 +1,20 @@
-# Custom EfficientNet example for Edge Impulse
+# EfficientNet base models for Edge Impulse
 
-This repository is an example on how to bring EfficientNet (built using Keras) into Edge Impulse.
+This repository contains the code to bring EfficientNet models into Edge Impulse.
 
-As a primer, read the [Custom learning blocks](https://docs.edgeimpulse.com/docs/edge-impulse-studio/learning-blocks/adding-custom-learning-blocks) page in the Edge Impulse docs.
+## Using this model
 
-## Running the pipeline
+Just want to use this model? You don't need this repository. In your Edge Impulse project go to any 'Transfer learning (images)' block, click **Choose a different model** and select **EfficientNet**.
+
+## Modifying the model code
+
+You can use this repository as a basis to bring other types of ML base models into Edge Impulse. As a primer, read the [Custom learning blocks](https://docs.edgeimpulse.com/docs/edge-impulse-studio/learning-blocks/adding-custom-learning-blocks) page in the Edge Impulse docs.
+
+### Running the pipeline
 
 You run this pipeline via Docker. This encapsulates all dependencies and packages for you.
 
-### Running via Docker
+#### Running via Docker
 
 1. Install [Docker Desktop](https://www.docker.com/products/docker-desktop/).
 2. Install the [Edge Impulse CLI](https://docs.edgeimpulse.com/docs/edge-impulse-cli/cli-installation) v1.16.0 or higher.
@@ -55,7 +61,7 @@ If you have extra packages that you want to install within the container, add th
 
 To add new arguments, see [Custom learning blocks > Arguments to your script](https://docs.edgeimpulse.com/docs/edge-impulse-studio/learning-blocks/adding-custom-learning-blocks#arguments-to-your-script).
 
-## Fetching new data
+### Fetching new data
 
 To get up-to-date data from your project:
 
@@ -67,7 +73,7 @@ To get up-to-date data from your project:
     $ edge-impulse-blocks runner --download-data data/
     ```
 
-## Pushing the block back to Edge Impulse
+### Pushing the block back to Edge Impulse
 
 You can also push this block back to Edge Impulse, that makes it available like any other ML block so you can retrain your model when new data comes in, or deploy the model to device. See [Docs > Adding custom learning blocks](https://docs.edgeimpulse.com/docs/edge-impulse-studio/organizations/adding-custom-transfer-learning-models) for more information.
 
@@ -79,7 +85,7 @@ You can also push this block back to Edge Impulse, that makes it available like 
 
 2. The block is now available under any of your projects via **Create impulse > Add learning block**, then select the block via 'Choose a different model' on the 'Transfer learning' page.
 
-## Changing the block type (e.g. image classification, object detection or regression)
+### Changing the block type (e.g. image classification, object detection or regression)
 
 If you want to change the block type because you're classifying a different data type, or build a model with a different output format, run:
 
