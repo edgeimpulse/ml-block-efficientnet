@@ -76,18 +76,23 @@
             }
         },
         {
-            "name": "Neurons in last dense layer",
-            "value": 32,
-            "type": "int",
-            "help": "One dense layer is added after the EfficientNet base model, these are the number of neurons in this layer. Set to 0 to disable.",
-            "param": "last-layer-neurons"
+            "name": "Last layers",
+            "type": "string",
+            "value": "dense: 32, dropout: 0.1",
+            "placeholder": "dense: 32, dropout: 0.1",
+            "help": "Extra layers after the EfficientNet base model. Valid options are 'dense: X' (where X=neurons), and 'dropout: X' (where X=dropout rate between 0..1). Separate options by a comma, e.g. \"dense: 32, dropout: 0.1\". Leave empty to omit.",
+            "param": "last-layers",
+            "allowEmpty": true
         },
         {
-            "name": "Dropout in last dense layer",
-            "value": 0.1,
-            "type": "float",
-            "help": "One dense layer is added after the EfficientNet base model, this is the dropout after this layer. Set to 0 to disable.",
-            "param": "last-layer-dropout"
+            "name": "Data augmentation",
+            "type": "string",
+            "value": "",
+            "placeholder": "flip, crop, brightness",
+            "help": "Data augmentations to apply to your training dataset. Valid options are 'flip', 'crop', 'brightness'. Or leave empty to disable data augmentation.",
+            "param": "data-augmentation",
+            "hint": "Valid options: flip, crop, brightness",
+            "allowEmpty": true
         },
         {
             "name": "Batch size",
@@ -98,7 +103,7 @@
             "section": "advanced"
         },
         {
-            "name": "Enable early stopping",
+            "name": "Early stopping",
             "type": "flag",
             "value": true,
             "help": "If enabled, stops training when there's no improvement in the loss.",

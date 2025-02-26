@@ -36,11 +36,11 @@ parser.add_argument('--use-pretrained-weights', action='store_true')
 parser.add_argument('--freeze-percentage-of-layers', type=int, required=False, default=90,
     help='% of layers that are frozen when transfer learning, only applies when --use-pretrained-weights is passed in')
 parser.add_argument('--batch-size', type=int, required=False, default=16)
-parser.add_argument('--last-layer-neurons', type=int, required=False, default=16)
-parser.add_argument('--last-layer-dropout', type=float, required=False, default=0.1)
+parser.add_argument('--last-layers', type=str, required=False, default='dense: 32, dropout: 0.1')
 parser.add_argument('--early-stopping', action='store_true')
 parser.add_argument('--early-stopping-patience', type=int, required=False, default=5)
 parser.add_argument('--early-stopping-min-delta', type=float, required=False, default=0.001)
+parser.add_argument('--data-augmentation', type=str, required=False)
 parser.add_argument('--out-directory', type=str, required=True)
 
 args, unknown = parser.parse_known_args()
@@ -52,9 +52,8 @@ model_size = args.model_size
 use_pretrained_weights = args.use_pretrained_weights
 freeze_percentage_of_layers = args.freeze_percentage_of_layers
 batch_size = args.batch_size
-last_layer_neurons = args.last_layer_neurons
-last_layer_dropout = args.last_layer_dropout
 early_stopping = args.early_stopping
+data_augmentation = args.data_augmentation
 
 # grab train/test set and convert into TF Dataset
 X_train = np.load(os.path.join(args.data_directory, 'X_split_train.npy'), mmap_mode='r')
@@ -69,12 +68,28 @@ MODEL_INPUT_SHAPE = X_train.shape[1:]
 train_dataset = tf.data.Dataset.from_tensor_slices((X_train, Y_train))
 validation_dataset = tf.data.Dataset.from_tensor_slices((X_test, Y_test))
 
-# print GPU/CPU info
-print('Training on:', 'gpu' if len(tf.config.list_physical_devices('GPU')) > 0 else 'cpu')
+print('Training info:')
+if use_pretrained_weights:
+    print(f'    Model: {model_size.upper()} (using pretrained weights, freezing bottom {freeze_percentage_of_layers}% of layers)')
+else:
+    print(f'    Model: {model_size.upper()} (not using pretrained weights)')
+print(f'    Epochs:', args.epochs)
+print(f'    Learning rate:', args.learning_rate)
+if early_stopping:
+    print(f'    Early stopping: yes (patience: {args.early_stopping_patience}, min delta: {args.early_stopping_min_delta})')
+else:
+    print('    Early stopping: no')
+print(f'    Last layers: {args.last_layers}')
+print(f'    Data augmentation: {args.data_augmentation}')
+print(f'    Batch size:', batch_size)
+print(f'    Training on:', 'gpu' if len(tf.config.list_physical_devices('GPU')) > 0 else 'cpu')
 print('')
 
 # place to put callbacks (e.g. to MLFlow or Weights & Biases)
 callbacks = []
+
+callbacks.append(shared.training.BatchLoggerCallback(
+    batch_size=batch_size, train_sample_count=len(X_train), epochs=args.epochs, ensure_determinism=False))
 
 if early_stopping:
     callbacks.append(tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=args.early_stopping_patience, min_delta=args.early_stopping_min_delta))
@@ -138,13 +153,66 @@ if use_pretrained_weights:
     for layer in base_model.layers[0:fine_tune_from]:
         layer.trainable = False
 
+if data_augmentation is not None and data_augmentation.strip() != '':
+    # strip quotes as well, just in case people put them in
+    opts = [ x.strip().strip("'").strip('"') for x in data_augmentation.split(',') ]
+    for opt in opts:
+        if opt != 'brightness' and opt != 'flip' and opt != 'crop':
+            print(f'Failed to parse --data-augmentation, invalid value "{opt}" (valid: brightness, flip, crop)')
+            exit(1)
+
+    # Implements the data augmentation policy
+    def augment_image(image, label):
+        if 'flip' in opts:
+            # Flips the image randomly
+            image = tf.image.random_flip_left_right(image)
+
+        if 'crop' in opts:
+            # Increase the image size, then randomly crop it down to
+            # the original dimensions
+            resize_factor = random.uniform(1, 1.2)
+            new_height = math.floor(resize_factor * MODEL_INPUT_SHAPE[0])
+            new_width = math.floor(resize_factor * MODEL_INPUT_SHAPE[1])
+            image = tf.image.resize_with_crop_or_pad(image, new_height, new_width)
+            image = tf.image.random_crop(image, size=MODEL_INPUT_SHAPE)
+
+        if 'brightness' in opts:
+            # Vary the brightness of the image
+            image = tf.image.random_brightness(image, max_delta=0.2)
+
+        return image, label
+
+    train_dataset = train_dataset.map(augment_image, num_parallel_calls=tf.data.AUTOTUNE)
+
 model = Sequential()
 model.add(InputLayer(input_shape=MODEL_INPUT_SHAPE, name='x_input'))
 model.add(Model(inputs=base_model.inputs, outputs=base_model.outputs))
-if last_layer_neurons > 0:
-    model.add(Dense(last_layer_neurons, activation='relu'))
-if last_layer_dropout > 0:
-    model.add(Dropout(last_layer_dropout))
+
+if args.last_layers:
+    for opt in args.last_layers.split(','):
+        split = [ x.strip() for x in opt.split(':') ]
+        if (len(split) != 2):
+            print(f'Failed to parse --last-layers, option: "{opt}" cannot be parsed')
+            exit(1)
+        name, val = split
+        if name == 'dense':
+            try:
+                val = int(val)
+            except ValueError:
+                print(f'Failed to parse --last-layers, option: "{opt}" value should be an int but was not')
+                exit(1)
+            model.add(Dense(val, activation='relu'))
+        elif name == 'dropout':
+            try:
+                val = float(val)
+            except ValueError:
+                print(f'Failed to parse --last-layers, option: "{opt}" value should be a float but was not')
+                exit(1)
+            model.add(Dropout(val))
+        else:
+            print(f'Failed to parse --last-layers, option: "{opt}" key was not recognized (should be dense, dropout)')
+            exit(1)
+
 model.add(Flatten())
 model.add(Dense(classes, activation='softmax'))
 

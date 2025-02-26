@@ -113,3 +113,25 @@ class HandleTrainingDeadline(Callback):
                 print_training_time_exceeded(self.is_enterprise_project, self.max_training_time_s, total_time)
                 exit(1)
             check_gpu_time_exceeded(self.max_gpu_time_s, total_time)
+
+# This callback ensures the frontend doesn't time out by sending a progress update every interval_s seconds.
+# This is necessary for long running epochs (in big datasets/complex models)
+class BatchLoggerCallback(tf.keras.callbacks.Callback):
+    def __init__(self, batch_size, train_sample_count, epochs, interval_s = 10, ensure_determinism=False):
+        # train_sample_count could be smaller than the batch size, so make sure total_batches is atleast
+        # 1 to avoid a 'divide by zero' exception in the 'on_train_batch_end' callback.
+        self.total_batches = max(1, int(train_sample_count / batch_size))
+        self.last_log_time = time.time()
+        self.epochs = epochs
+        self.interval_s = interval_s
+
+    # Within each epoch, print the time every 10 seconds
+    def on_train_batch_end(self, batch, logs=None):
+        current_time = time.time()
+        if self.last_log_time + self.interval_s < current_time:
+            print('Epoch {0}% done'.format(int(100 / self.total_batches * batch)), flush=True)
+            self.last_log_time = current_time
+
+    # Reset the time the start of every epoch
+    def on_epoch_end(self, epoch, logs=None):
+        self.last_log_time = time.time()
