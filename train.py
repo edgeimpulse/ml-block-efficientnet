@@ -80,7 +80,7 @@ if early_stopping:
 else:
     print('    Early stopping: no')
 print(f'    Last layers: {args.last_layers}')
-print(f'    Data augmentation: {args.data_augmentation}')
+print(f'    Data augmentation: {args.data_augmentation if args.data_augmentation else "None"}')
 print(f'    Batch size:', batch_size)
 print(f'    Training on:', 'gpu' if len(tf.config.list_physical_devices('GPU')) > 0 else 'cpu')
 print('')
