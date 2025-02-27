@@ -1,4 +1,3 @@
-import sklearn # do this first, otherwise get a libgomp error?!
 import argparse, os, sys, random, logging, math, tempfile
 import numpy as np
 import tensorflow as tf
@@ -6,7 +5,7 @@ from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense, InputLayer, Dropout, Flatten, Reshape, Lambda, Rescaling
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras import Model
-from conversion import convert_to_tf_lite, save_saved_model
+from conversion import save_saved_model
 from shared.parse_train_input import parse_train_input, parse_input_shape
 import shared.training
 
@@ -252,16 +251,6 @@ model = shared.training.load_best_model(BEST_MODEL_PATH)
 print('Loading model with lowest validation loss OK')
 print('')
 
-# Use this flag to disable per-channel quantization for a model.
-# This can reduce RAM usage for convolutional models, but may have
-# an impact on accuracy.
-disable_per_channel_quantization = False
-
-# Save the model to disk
 save_saved_model(model, args.out_directory)
-
-# Create tflite files (f32 / i8)
-convert_to_tf_lite(model, args.out_directory, validation_dataset, MODEL_INPUT_SHAPE,
-    'model.tflite', 'model_quantized_int8_io.tflite', disable_per_channel_quantization)
 
 best_model_temp_dir.cleanup()

@@ -51,7 +51,7 @@ You run this pipeline via Docker. This encapsulates all dependencies and package
         --out-directory out/
     ```
 
-10. This creates two .tflite files and a saved model ZIP file in the 'out' directory.
+10. This creates a saved model ZIP file in the 'out' directory.
 
 #### Adding extra dependencies
 
