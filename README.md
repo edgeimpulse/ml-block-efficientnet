@@ -41,8 +41,34 @@ You run this pipeline via Docker. This encapsulates all dependencies and package
 
 9. Run the container to test the script (you don't need to rebuild the container if you make changes):
 
+    **macOS, Linux**
+
     ```
     $ docker run --rm -v $PWD:/app efficientnet \
+        --data-directory /app/data \
+        --epochs 20 \
+        --learning-rate 0.001 \
+        --model-size b0 \
+        --use-pretrained-weights \
+        --out-directory out/
+    ```
+
+    **Windows (Command prompt)**
+
+    ```
+    $ docker run --rm -v "%cd%":/app efficientnet \
+        --data-directory /app/data \
+        --epochs 20 \
+        --learning-rate 0.001 \
+        --model-size b0 \
+        --use-pretrained-weights \
+        --out-directory out/
+    ```
+
+    **Windows (Powershell)**
+
+    ```
+    $ docker run --rm -v ${PWD}$:/app efficientnet \
         --data-directory /app/data \
         --epochs 20 \
         --learning-rate 0.001 \
