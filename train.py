@@ -116,7 +116,7 @@ if args.info_file:
         is_enterprise_project=input.isEnterpriseProject,
         max_training_time_s=input.maxTrainingTimeSeconds,
         max_gpu_time_s=input.remainingGpuComputeTimeSeconds,
-        enable_tensorboard=input.tensorboardLogging)
+        enable_tensorboard=True)
 
 # model architecture
 if model_size == 'b0':
