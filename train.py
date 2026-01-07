@@ -11,7 +11,7 @@ import shared.training
 
 # Lower TensorFlow log levels
 tf.get_logger().setLevel(logging.ERROR)
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 # Set random seeds for repeatable results
 RANDOM_SEED = 3
