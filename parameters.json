@@ -7,7 +7,7 @@
         "operatesOn": "image",
         "imageInputScaling": "0..255",
         "indRequiresGpu": false,
-        "repositoryUrl": "https://github.com/edgeimpulse/example-custom-ml-block-efficientnet"
+        "repositoryUrl": "https://github.com/edgeimpulse/ml-block-efficientnet"
     },
     "parameters": [
         {
