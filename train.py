@@ -19,6 +19,11 @@ random.seed(RANDOM_SEED)
 np.random.seed(RANDOM_SEED)
 tf.random.set_seed(RANDOM_SEED)
 
+# Disable layout_optimizer, fails on Studio
+tf.config.optimizer.set_experimental_options({
+    'layout_optimizer': False,
+})
+
 dir_path = os.path.dirname(os.path.realpath(__file__))
 
 WEIGHTS_PREFIX = os.environ.get('WEIGHTS_PREFIX', '/weights')
