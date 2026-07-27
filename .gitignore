@@ -9,3 +9,4 @@ transfer-learning-weights/*.h5
 .venv/
 train_input.json
 tensorboard_logs/
+test/

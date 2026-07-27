@@ -4,3 +4,5 @@ transfer-learning-weights/
 .venv/
 train-input.json
 tensorboard_logs/
+test/
+__pycache__/

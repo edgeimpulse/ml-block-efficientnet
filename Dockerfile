@@ -1,44 +1,38 @@
-# syntax = docker/dockerfile:experimental
-ARG UBUNTU_VERSION=20.04
+# syntax = docker/dockerfile:experimental@sha256:3c244c0c6fc9d6aa3ddb73af4264b3a23597523ac553294218c13735a2c6cf79
+ARG UBUNTU_VERSION=24.04
 
 ARG ARCH=
-ARG CUDA=11.2
-FROM nvidia/cuda${ARCH:+-$ARCH}:${CUDA}.2-base-ubuntu${UBUNTU_VERSION} as base
+ARG CUDA=12.9.1
+ARG CUDA_SHORT=12.9
+ARG CUDA_PACKAGE_VERSION=12-9
+ARG CUDA_FLAVOR=base
+FROM nvidia/cuda${ARCH:+-$ARCH}:${CUDA}-${CUDA_FLAVOR}-ubuntu${UBUNTU_VERSION} as base
 ARG CUDA
-ARG CUDNN=8.1.0.77-1
-ARG CUDNN_MAJOR_VERSION=8
-ARG LIB_DIR_PREFIX=x86_64
-ARG LIBNVINFER=8.0.0-1
-ARG LIBNVINFER_MAJOR_VERSION=8
-# Let us install tzdata painlessly
+ARG CUDA_SHORT
+ARG CUDA_PACKAGE_VERSION
 ENV DEBIAN_FRONTEND=noninteractive
 
 WORKDIR /app
 
-# Avoid confirmation dialogs
-ENV DEBIAN_FRONTEND=noninteractive
-# Makes Poetry behave more like npm, with deps installed inside a .venv folder
-# See https://python-poetry.org/docs/configuration/#virtualenvsin-project
-ENV POETRY_VIRTUALENVS_IN_PROJECT=true
+# Install Python, pip, and dos2unix (as when you check out install_cuda.sh on Windows it converts to CRLF which bash does not like in the next step)
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    apt-get update && apt-get install -y --no-install-recommends \
+        python3 python3-pip dos2unix && \
+    rm -rf /var/lib/apt/lists/*
 
-# When building on Windows we'll get CRLF line endings, which we cannot run from bash...
-RUN apt update && apt install -y dos2unix
-
-# CUDA drivers
-SHELL ["/bin/bash", "-c"]
-COPY build-dependencies/install_cuda.sh ./install_cuda.sh
-RUN dos2unix ./install_cuda.sh && \
+# Install NVIDIA CUDA/cuDNN runtime libraries needed by TensorFlow on x86.
+COPY dependencies/install_cuda.sh ./install_cuda.sh
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    dos2unix ./install_cuda.sh && \
     /bin/bash ./install_cuda.sh && \
-    rm install_cuda.sh
+    rm install_cuda.sh && \
+    rm -rf /var/lib/apt/lists/*
 
-# Install base packages
-RUN apt update && apt install -y curl zip git lsb-release software-properties-common apt-transport-https vim wget
-
-# Install Python 3
-RUN apt update && apt install -y python3 python3-pip python3-distutils
-
-# Pin pip / setuptools
-RUN python3 -m pip install "pip==21.3.1" "setuptools==62.6.0"
+# Add other system dependencies
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    apt-get update && apt-get install -y --no-install-recommends \
+        wget && \
+    rm -rf /var/lib/apt/lists/*
 
 # Download weights, mirrored from https://github.com/Runist/image-classifier-keras/releases
 RUN mkdir -p /weights && \
@@ -50,15 +44,18 @@ RUN mkdir -p /weights && \
     wget https://cdn.edgeimpulse.com/pretrained-weights/efficientnet/efficientnetb4_notop.h5 && \
     wget https://cdn.edgeimpulse.com/pretrained-weights/efficientnet/efficientnetb5_notop.h5
 
-# Copy Python requirements in and install them
+# Copy Python requirements in and install them (--break-system-packages is required if we don't use a venv)
 COPY requirements.txt ./
-RUN pip3 install -r requirements.txt
-
-# https://stackoverflow.com/questions/43147983/could-not-create-cudnn-handle-cudnn-status-internal-error
-ENV TF_FORCE_GPU_ALLOW_GROWTH=true
+RUN --mount=type=cache,target=/root/.cache/pip \
+    pip3 install --break-system-packages -r requirements.txt
 
 # Copy the rest of your training scripts in
 COPY . ./
+
+# https://stackoverflow.com/questions/43147983/could-not-create-cudnn-handle-cudnn-status-internal-error
+ENV TF_FORCE_GPU_ALLOW_GROWTH=true
+# Ensure we can output a valid Keras SavedModel (not a TF one) - so the data explorer works in Studio
+ENV TF_USE_LEGACY_KERAS=1
 
 # And tell us where to run the pipeline
 ENTRYPOINT ["python3", "-u", "train.py"]

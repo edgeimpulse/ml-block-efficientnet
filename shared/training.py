@@ -16,8 +16,7 @@ def get_callbacks(dir_path, is_enterprise_project, max_training_time_s, max_gpu_
 
     if enable_tensorboard:
         tb_callback = tf.keras.callbacks.TensorBoard(log_dir=os.path.join(dir_path, 'tensorboard_logs'),
-                                                     # Profile batches 1-100
-                                                     profile_batch=(1,101))
+                                                     profile_batch=0)
         callbacks.append(tb_callback)
 
     return callbacks
