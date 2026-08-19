@@ -1,6 +1,6 @@
 # EfficientNet base models for Edge Impulse
 
-This repository contains the code to bring EfficientNet models into Edge Impulse.
+This repository contains the code to bring EfficientNet and EfficientNetV2 models into Edge Impulse.
 
 ## Using this model
 
@@ -52,6 +52,8 @@ You run this pipeline via Docker. This encapsulates all dependencies and package
         --use-pretrained-weights \
         --out-directory out/
     ```
+
+    Use the original EfficientNet values (`b0` through `b5`) for backwards compatibility, or use the prefixed EfficientNetV2 values (`v2_b0`, `v2_b1`, `v2_b2`, `v2_b3`, `v2_s`, `v2_m`, `v2_l`).
 
     **Windows (Command prompt)**
 

@@ -3,7 +3,7 @@
     "type": "machine-learning",
     "info": {
         "name": "EfficientNet",
-        "description": "A collection of high-end image classification models, with transfer learning weights, scaling from 4 to 28M parameters. Great for complex usecases on Linux.",
+        "description": "A collection of high-end EfficientNet and EfficientNetV2 image classification models, with transfer learning weights. Great for complex usecases on Linux.",
         "operatesOn": "image",
         "imageInputScaling": "0..255",
         "indRequiresGpu": false,
@@ -30,28 +30,56 @@
             "type": "select",
             "valid": [
                 {
-                    "label": "B0 - 4M params, 16 MB",
+                    "label": "V1 B0 - 4M params, 16 MB",
                     "value": "b0"
                 },
                 {
-                    "label": "B1 - 6.5M params, 26 MB",
+                    "label": "V1 B1 - 6.5M params, 26 MB",
                     "value": "b1"
                 },
                 {
-                    "label": "B2 - 7.7M params, 30.8 MB",
+                    "label": "V1 B2 - 7.7M params, 30.8 MB",
                     "value": "b2"
                 },
                 {
-                    "label": "B3 - 10.7M params, 42.8 MB",
+                    "label": "V1 B3 - 10.7M params, 42.8 MB",
                     "value": "b3"
                 },
                 {
-                    "label": "B4 - 17.5M params, 70 MB",
+                    "label": "V1 B4 - 17.5M params, 70 MB",
                     "value": "b4"
                 },
                 {
-                    "label": "B5 - 28.3M params, 113.2 MB",
+                    "label": "V1 B5 - 28.3M params, 113.2 MB",
                     "value": "b5"
+                },
+                {
+                    "label": "V2 B0 - 5.9M params, 24 MB",
+                    "value": "v2_b0"
+                },
+                {
+                    "label": "V2 B1 - 6.9M params, 28 MB",
+                    "value": "v2_b1"
+                },
+                {
+                    "label": "V2 B2 - 8.8M params, 35 MB",
+                    "value": "v2_b2"
+                },
+                {
+                    "label": "V2 B3 - 12.9M params, 52 MB",
+                    "value": "v2_b3"
+                },
+                {
+                    "label": "V2 S - 21.6M params, 86 MB",
+                    "value": "v2_s"
+                },
+                {
+                    "label": "V2 M - 54.4M params, 218 MB",
+                    "value": "v2_m"
+                },
+                {
+                    "label": "V2 L - 119M params, 475 MB",
+                    "value": "v2_l"
                 }
             ],
             "param": "model-size"

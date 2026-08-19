@@ -1,32 +1,5 @@
-# syntax = docker/dockerfile:experimental@sha256:3c244c0c6fc9d6aa3ddb73af4264b3a23597523ac553294218c13735a2c6cf79
-ARG UBUNTU_VERSION=24.04
-
-ARG ARCH=
-ARG CUDA=12.9.1
-ARG CUDA_SHORT=12.9
-ARG CUDA_PACKAGE_VERSION=12-9
-ARG CUDA_FLAVOR=base
-FROM nvidia/cuda${ARCH:+-$ARCH}:${CUDA}-${CUDA_FLAVOR}-ubuntu${UBUNTU_VERSION} as base
-ARG CUDA
-ARG CUDA_SHORT
-ARG CUDA_PACKAGE_VERSION
-ENV DEBIAN_FRONTEND=noninteractive
-
-WORKDIR /app
-
-# Install Python, pip, and dos2unix (as when you check out install_cuda.sh on Windows it converts to CRLF which bash does not like in the next step)
-RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
-    apt-get update && apt-get install -y --no-install-recommends \
-        python3 python3-pip dos2unix && \
-    rm -rf /var/lib/apt/lists/*
-
-# Install NVIDIA CUDA/cuDNN runtime libraries needed by TensorFlow on x86.
-COPY dependencies/install_cuda.sh ./install_cuda.sh
-RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
-    dos2unix ./install_cuda.sh && \
-    /bin/bash ./install_cuda.sh && \
-    rm install_cuda.sh && \
-    rm -rf /var/lib/apt/lists/*
+# Simple Ubuntu 24.04 base image with Python3.12 and CUDA setup already (for GPU training)
+FROM public.ecr.aws/z9b3d4t5/ei-custom-ml-block-base:v1.95.5-test-9e8dfa82
 
 # Add other system dependencies
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
@@ -34,20 +7,13 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
         wget && \
     rm -rf /var/lib/apt/lists/*
 
-# Download weights, mirrored from https://github.com/Runist/image-classifier-keras/releases
-RUN mkdir -p /weights && \
-    cd /weights && \
-    wget https://cdn.edgeimpulse.com/pretrained-weights/efficientnet/efficientnetb0_notop.h5 && \
-    wget https://cdn.edgeimpulse.com/pretrained-weights/efficientnet/efficientnetb1_notop.h5 && \
-    wget https://cdn.edgeimpulse.com/pretrained-weights/efficientnet/efficientnetb2_notop.h5 && \
-    wget https://cdn.edgeimpulse.com/pretrained-weights/efficientnet/efficientnetb3_notop.h5 && \
-    wget https://cdn.edgeimpulse.com/pretrained-weights/efficientnet/efficientnetb4_notop.h5 && \
-    wget https://cdn.edgeimpulse.com/pretrained-weights/efficientnet/efficientnetb5_notop.h5
-
 # Copy Python requirements in and install them (--break-system-packages is required if we don't use a venv)
 COPY requirements.txt ./
 RUN --mount=type=cache,target=/root/.cache/pip \
     pip3 install --break-system-packages -r requirements.txt
+
+# Pre-cache ImageNet weights so transfer learning also works with --network=none.
+RUN python3 -c "import tensorflow as tf; [builder(include_top=False, pooling='avg', weights='imagenet') for builder in (tf.keras.applications.EfficientNetB0, tf.keras.applications.EfficientNetB1, tf.keras.applications.EfficientNetB2, tf.keras.applications.EfficientNetB3, tf.keras.applications.EfficientNetB4, tf.keras.applications.EfficientNetB5, tf.keras.applications.EfficientNetV2B0, tf.keras.applications.EfficientNetV2B1, tf.keras.applications.EfficientNetV2B2, tf.keras.applications.EfficientNetV2B3, tf.keras.applications.EfficientNetV2S, tf.keras.applications.EfficientNetV2M, tf.keras.applications.EfficientNetV2L)]"
 
 # Copy the rest of your training scripts in
 COPY . ./

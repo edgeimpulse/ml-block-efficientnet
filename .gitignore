@@ -10,3 +10,8 @@ transfer-learning-weights/*.h5
 train_input.json
 tensorboard_logs/
 test/
+.ei-project-config.json
+scripts/node_modules/
+out-*/
+out*.log
+.vscode/

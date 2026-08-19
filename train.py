@@ -21,10 +21,24 @@ tf.random.set_seed(RANDOM_SEED)
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
 
-WEIGHTS_PREFIX = os.environ.get('WEIGHTS_PREFIX', '/weights')
+MODEL_VARIANTS = {
+    'b0': tf.keras.applications.EfficientNetB0,
+    'b1': tf.keras.applications.EfficientNetB1,
+    'b2': tf.keras.applications.EfficientNetB2,
+    'b3': tf.keras.applications.EfficientNetB3,
+    'b4': tf.keras.applications.EfficientNetB4,
+    'b5': tf.keras.applications.EfficientNetB5,
+    'v2_b0': tf.keras.applications.EfficientNetV2B0,
+    'v2_b1': tf.keras.applications.EfficientNetV2B1,
+    'v2_b2': tf.keras.applications.EfficientNetV2B2,
+    'v2_b3': tf.keras.applications.EfficientNetV2B3,
+    'v2_s': tf.keras.applications.EfficientNetV2S,
+    'v2_m': tf.keras.applications.EfficientNetV2M,
+    'v2_l': tf.keras.applications.EfficientNetV2L,
+}
 
 # Load files
-parser = argparse.ArgumentParser(description='EfficientNet B0 model in Edge Impulse')
+parser = argparse.ArgumentParser(description='EfficientNet and EfficientNetV2 models in Edge Impulse')
 parser.add_argument('--info-file', type=str, required=False,
                     help='train_input.json file with info about classes and input shape')
 parser.add_argument('--data-directory', type=str, required=True)
@@ -119,45 +133,16 @@ if args.info_file:
         enable_tensorboard=True)
 
 # model architecture
-if model_size == 'b0':
-    if use_pretrained_weights:
-        weights_path = os.path.join(WEIGHTS_PREFIX, 'efficientnetb0_notop.h5')
-        base_model = tf.keras.applications.EfficientNetB0(include_top=False, pooling='avg', weights=weights_path, classes=classes)
-    else:
-        base_model = tf.keras.applications.EfficientNetB0(include_top=False, pooling='avg', weights=None, classes=classes)
-elif model_size == 'b1':
-    if use_pretrained_weights:
-        weights_path = os.path.join(WEIGHTS_PREFIX, 'efficientnetb1_notop.h5')
-        base_model = tf.keras.applications.EfficientNetB1(include_top=False, pooling='avg', weights=weights_path, classes=classes)
-    else:
-        base_model = tf.keras.applications.EfficientNetB1(include_top=False, pooling='avg', weights=None, classes=classes)
-elif model_size == 'b2':
-    if use_pretrained_weights:
-        weights_path = os.path.join(WEIGHTS_PREFIX, 'efficientnetb2_notop.h5')
-        base_model = tf.keras.applications.EfficientNetB2(include_top=False, pooling='avg', weights=weights_path, classes=classes)
-    else:
-        base_model = tf.keras.applications.EfficientNetB2(include_top=False, pooling='avg', weights=None, classes=classes)
-elif model_size == 'b3':
-    if use_pretrained_weights:
-        weights_path = os.path.join(WEIGHTS_PREFIX, 'efficientnetb3_notop.h5')
-        base_model = tf.keras.applications.EfficientNetB3(include_top=False, pooling='avg', weights=weights_path, classes=classes)
-    else:
-        base_model = tf.keras.applications.EfficientNetB3(include_top=False, pooling='avg', weights=None, classes=classes)
-elif model_size == 'b4':
-    if use_pretrained_weights:
-        weights_path = os.path.join(WEIGHTS_PREFIX, 'efficientnetb4_notop.h5')
-        base_model = tf.keras.applications.EfficientNetB4(include_top=False, pooling='avg', weights=weights_path, classes=classes)
-    else:
-        base_model = tf.keras.applications.EfficientNetB4(include_top=False, pooling='avg', weights=None, classes=classes)
-elif model_size == 'b5':
-    if use_pretrained_weights:
-        weights_path = os.path.join(WEIGHTS_PREFIX, 'efficientnetb5_notop.h5')
-        base_model = tf.keras.applications.EfficientNetB5(include_top=False, pooling='avg', weights=weights_path, classes=classes)
-    else:
-        base_model = tf.keras.applications.EfficientNetB5(include_top=False, pooling='avg', weights=None, classes=classes)
-else:
-    print(f'Expected --model-size to be b0, b1, b2, b3, b4 or b5 (was {model_size})')
+model_builder = MODEL_VARIANTS.get(model_size)
+if model_builder is None:
+    print(f'Expected --model-size to be one of {", ".join(MODEL_VARIANTS.keys())} (was {model_size})')
     exit(1)
+
+base_model = model_builder(
+    include_top=False,
+    pooling='avg',
+    weights='imagenet' if use_pretrained_weights else None,
+    classes=classes)
 
 if use_pretrained_weights:
     # What percentage of the base model's layers we will fine tune
