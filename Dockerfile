@@ -1,5 +1,5 @@
 # Simple Ubuntu 24.04 base image with Python3.12 and CUDA setup already (for GPU training)
-FROM public.ecr.aws/z9b3d4t5/ei-custom-ml-block-base:v1.95.5-test-9e8dfa82
+FROM public.ecr.aws/g7a8t7v6/ei-custom-ml-block-base:v1.95.5
 
 # Add other system dependencies
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
