@@ -6,3 +6,8 @@ train-input.json
 tensorboard_logs/
 test/
 __pycache__/
+scripts/
+.ei-block-config
+.ei-project-config.json
+out-*/
+out*.log
