@@ -1,6 +1,6 @@
 # EfficientNet base models for Edge Impulse
 
-This repository contains the code to bring EfficientNet models into Edge Impulse.
+This repository contains the code to bring EfficientNet models into Edge Impulse. 
 
 ## Using this model
 
@@ -8,7 +8,7 @@ Just want to use this model? You don't need this repository. In your Edge Impuls
 
 ## Modifying the model code
 
-You can use this repository as a basis to bring other types of ML base models into Edge Impulse. As a primer, read the [Custom learning blocks](https://docs.edgeimpulse.com/docs/edge-impulse-studio/learning-blocks/adding-custom-learning-blocks) page in the Edge Impulse docs.
+You can use this repository as a basis to bring other types of ML base models into Edge Impulse. As a primer, read the [Custom learning blocks](https://docs.edgeimpulse.com/docs/edge-impulse-studio/learning-blocks/adding-custom-learning-blocks) page in the Edge Impulse docs. Then see [edgeimpulse/example-custom-ml-block-keras](https://github.com/edgeimpulse/example-custom-ml-block-keras) or [example-custom-ml-block-pytorch](https://github.com/edgeimpulse/example-custom-ml-block-pytorch) for end-to-end repositories, with verification scripts and agentic instructions.
 
 ### Running the pipeline
 
